@@ -1,13 +1,22 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <OutputType>Exe</OutputType>
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <RootNamespace>DeepData</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Docs\" />
+      <Folder Include="Source\Data\Input\" />
+      <Folder Include="Source\Data\Output\" />
+      <Folder Include="Source\Data\Test\Out\" />
     </ItemGroup>
 
 </Project>

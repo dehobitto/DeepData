@@ -1,29 +1,26 @@
 ﻿using System.Text;
-using Converter;
+using DeepData.Stego;
+using DeepData.Stego.Interfaces;
+using DeepData.Stego.Methods;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace Steganograph;
+namespace DeepData;
 
-internal class Runner
+internal static class Runner
 {
    public static void Main(string[] args)
    {
-      IStego stg = new LsbStego();
-      (int h, int w) size;
-      byte[] source = ImgToByte.ToBytes(args[0], out size);
+      IStegoMethod<Image<Rgba32>, byte[]> stg = new Qim();
+      Image<Rgba32> source = Image.Load<Rgba32>(args[0]);
       Options opt = new Options();
       
       if (args.Length > 1)
       {
          byte[] data = Encoding.ASCII.GetBytes(args[1]);
-         
-         byte[] output = stg.Embed(source, data, opt);
-         Image<Rgba32> img = ImgToByte.ToImage(output, size);
-         
-         img.Save("result.png", new PngEncoder());
+         Image<Rgba32> output = stg.Embed(source, data, opt);
+         output.Save("./Source/Data/Output/result.png", new PngEncoder());
       }else if (args.Length == 1)
       {
          byte[] data = stg.Extract(source, opt);
@@ -32,4 +29,3 @@ internal class Runner
       }
    }
 }
-
