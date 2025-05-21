@@ -12,6 +12,6 @@ public interface IStegoMethod<TSource, TPayload>
     /// <param name="options"></param>
     ///  Some options that can be changed by user, in Steganograph/Options.cs
     
-    TSource Embed(TSource source, byte[] data, Options options);
-    TPayload Extract(TSource source, Options options);
+    TSource Embed(TSource source, byte[] data);
+    TPayload Extract(TSource source);
 }
