@@ -8,4 +8,5 @@ public abstract class StegoMethod<TSource, TPayload> : IStegoMethod<TSource, TPa
     public abstract TPayload Extract(TSource source);
     public required Options Options { get; set; }
     public abstract bool WillFit(TSource source, TPayload payload);
+    public abstract int GetCapacity(TSource source);
 }

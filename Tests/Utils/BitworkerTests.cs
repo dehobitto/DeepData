@@ -1,3 +1,4 @@
+using DeepData.Core;
 using DeepData.Core.Utils;
 
 namespace DeepData.Test.Utils;
@@ -5,81 +6,107 @@ namespace DeepData.Test.Utils;
 public class BitWorkerTests
 {
     [Fact]
-    public void FromBytes_ShouldWriteAndReadBackCorrectly()
+    public void Constructor_SetsCapacityAndInitialPosition()
     {
-        byte[] data = { 0xAB, 0xCD, 0xEF };
-        var bw = BitWorker.CreateFromBytes(data);
-
-        var readBack = bw.ReadBytes(data.Length * 8);
-        Assert.Equal(data, readBack);
+        var worker = new BitWorker(16);
+        Assert.Equal(16, worker.CapacityBits);
+        Assert.Equal(0, worker.CurrentPositionBits);
     }
 
     [Fact]
-    public void WriteBitsFromByte_ShouldWriteCorrectBits()
+    public void WriteAndReadSingleBit()
     {
-        var bw = new BitWorker(8);
-        bw.WriteNLastBits(0b10101010, 8);
-        bw.Restart();
-
-        byte result = bw.ReadNBytes(8);
-        Assert.Equal(0b10101010, result);
+        var worker = new BitWorker(1);
+        worker.WriteBit(true);
+        worker.ResetPosition();
+        Assert.True(worker.ReadBit());
     }
 
     [Fact]
-    public void Write_And_ReadBit_ShouldBeSymmetric()
+    public void WriteAndReadByte()
     {
-        var bw = new BitWorker(3);
-        bw.Write(true);
-        bw.Write(false);
-        bw.Write(true);
-        bw.Restart();
-
-        Assert.True(bw.ReadBit());
-        Assert.False(bw.ReadBit());
-        Assert.True(bw.ReadBit());
+        var worker = new BitWorker(8);
+        byte value = 0b10101010;
+        worker.WriteByte(value);
+        worker.ResetPosition();
+        Assert.Equal(value, worker.ReadByte());
     }
 
     [Fact]
-    public void Write_And_ReadBits_ShouldMatch()
+    public void WriteAndReadUInt32()
     {
-        var bw = new BitWorker(5);
-        bw.WriteNLastBits(0b11011, 5);
-        bw.Restart();
-
-        var result = bw.ReadNBytes(5);
-        Assert.Equal(0b11011, result);
+        var worker = new BitWorker(32);
+        uint value = 0xDEADBEEF;
+        worker.WriteUInt32(value, 32);
+        worker.ResetPosition();
+        Assert.Equal(value, worker.ReadUInt32(32));
     }
 
     [Fact]
-    public void Restart_ShouldResetBitIndex()
+    public void WriteBitsFromByte_WritesCorrectBits()
     {
-        var bw = new BitWorker(1);
-        bw.Write(true);
-        bw.Restart();
-        Assert.False(bw.IsEnded());
+        var worker = new BitWorker(8);
+        byte value = 0b10101010;
+        worker.WriteBitsFromByte(value, 8);
+        worker.ResetPosition();
+    
+        Assert.True(worker.ReadBit()); // bit 7
+        Assert.False(worker.ReadBit()); // bit 6
+        Assert.True(worker.ReadBit()); // bit 5
+        Assert.False(worker.ReadBit()); // bit 4
+        Assert.True(worker.ReadBit()); // bit 3
+        Assert.False(worker.ReadBit()); // bit 2
+        Assert.True(worker.ReadBit()); // bit 1
+        Assert.False(worker.ReadBit()); // bit 0
+    }
+
+
+    [Fact]
+    public void CreateWithHeaderFromBytes_EncodesAndDecodes()
+    {
+        byte[] data = { 1, 2, 3, 4 };
+        var worker = BitWorker.CreateWithHeaderFromBytes(data);
+        byte[] result = worker.ReadBytesWithHeader();
+        Assert.Equal(data, result);
     }
 
     [Fact]
-    public void IsEnded_ShouldReturnTrueWhenOutOfBounds()
+    public void WriteBytes_And_ReadBytes_Correctly()
     {
-        var bw = new BitWorker(1);
-        bw.Write(true);
-        Assert.True(bw.IsEnded());
+        byte[] data = { 42, 255, 0 };
+        var worker = new BitWorker(data.Length * 8);
+        worker.WriteBytes(data);
+        worker.ResetPosition();
+        foreach (var expected in data)
+        {
+            Assert.Equal(expected, worker.ReadByte());
+        }
     }
 
     [Fact]
-    public void ReadBit_ShouldThrow_WhenOutOfBounds()
+    public void ReadBytesWithHeader_InvalidData_Throws()
     {
-        var bw = new BitWorker(1);
-        bw.Write(true);
-        Assert.Throws<IndexOutOfRangeException>(() => bw.ReadBit());
+        byte[] data = { 1, 2, 3 };
+        var worker = BitWorker.CreateWithHeaderFromBytes(data);
+        // Manually tamper with internal position to simulate corrupt header
+        var tampered = new BitWorker(worker.CapacityBits);
+        tampered.WriteUInt32(99999999, Constants.HeaderBits);
+        Assert.Throws<InvalidDataException>(() => tampered.ReadBytesWithHeader());
     }
 
     [Fact]
-    public void Write_ShouldThrow_WhenOutOfBounds()
+    public void ReadBit_AtEnd_Throws()
     {
-        var bw = new BitWorker(1);
-        bw.Write(true);
-        Assert.Throws<IndexOutOfRangeException>(() => bw.Write(true));
+        var worker = new BitWorker(1);
+        worker.WriteBit(true);
+        Assert.Throws<IndexOutOfRangeException>(() => worker.ReadBit());
+    }
+
+    [Fact]
+    public void WriteBit_AtEnd_Throws()
+    {
+        var worker = new BitWorker(1);
+        worker.WriteBit(true);
+        Assert.Throws<IndexOutOfRangeException>(() => worker.WriteBit(false));
     }
 }

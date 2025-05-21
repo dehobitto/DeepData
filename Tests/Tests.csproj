@@ -29,10 +29,4 @@
       <Folder Include="Data\Output\" />
     </ItemGroup>
 
-    <ItemGroup>
-      <None Update="Data\Input\3.pdf">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
-    </ItemGroup>
-
 </Project>

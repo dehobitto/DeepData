@@ -21,7 +21,7 @@ public static class Constants
 
     public const string DefaultFileName = "result";
     
-    public const byte DefaultQimDelta = 2;
+    public const byte DefaultQimDelta = 64;
     public const byte DefaultLsbStrength = 2;
     public static readonly (int R, int G, int B) DefaultChannels = (1, 1, 1);
     public static readonly (int Y, int Cb, int Cr) DefaultChannelsJpeg = (1, 1, 1);

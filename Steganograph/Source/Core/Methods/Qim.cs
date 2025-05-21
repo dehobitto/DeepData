@@ -1,5 +1,6 @@
 using DeepData.Core.Models;
 using DeepData.Core.Utils;
+using DeepData.Core.Utils.StegoSpecific;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
@@ -16,14 +17,14 @@ public class Qim : StegoMethod<Image<Rgba32>, byte[]>
             throw new ArgumentException("The source image does not fit the required data.");
         }
         
-        BitWorker bw = BitWorker.CreateFromBytes(data);
+        BitWorker bw = BitWorker.CreateWithHeaderFromBytes(data);
 
         var result = source.Clone();
         var delta = Options.QimDelta;
         var channels = Options.Channels;
 
-        for (int y = 0; y < result.Height && !bw.IsEnded(); y++)
-        for (int x = 0; x < result.Width && !bw.IsEnded(); x++)
+        for (int y = 0; y < result.Height && !bw.IsAtEnd(); y++)
+        for (int x = 0; x < result.Width && !bw.IsAtEnd(); x++)
         {
             var px = result[x, y];
 
@@ -89,10 +90,10 @@ public class Qim : StegoMethod<Image<Rgba32>, byte[]>
             }
 
             bool finalBit = Vote(activeChannels, bitCount);
-            bw.Write(finalBit);
+            bw.WriteBit(finalBit);
         }
 
-        return bw.ReadBytes(totalBits);
+        return bw.ReadBytesWithHeader();
     }
 
     public override bool WillFit(Image<Rgba32> source, byte[] payload)
@@ -100,5 +101,10 @@ public class Qim : StegoMethod<Image<Rgba32>, byte[]>
         int maxBytes = (source.Width * source.Height - Constants.HeaderBits) / 8;
         
         return maxBytes >= payload.Length;
+    }
+
+    public override int GetCapacity(Image<Rgba32> source)
+    {
+        return source.Width * source.Height * (Options.Channels.R + Options.Channels.G + Options.Channels.B);
     }
 }

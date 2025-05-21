@@ -1,4 +1,5 @@
 using DeepData.Core.Utils;
+using DeepData.Core.Utils.StegoSpecific;
 
 namespace DeepData.Test.Utils;
 
