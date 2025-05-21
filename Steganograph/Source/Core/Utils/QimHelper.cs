@@ -1,4 +1,4 @@
-namespace DeepData.Stego.Utils;
+namespace DeepData.Core.Utils;
 
 public static class QimHelper
 {
@@ -9,7 +9,7 @@ public static class QimHelper
     public static byte QimEmbedBit(byte orig, bool bit, int delta)
     {
         double quantized = Math.Floor((double)orig / delta) * delta;
-        double center = quantized + (bit ? delta * 0.75 : delta * 0.25); // emperial selected numbers can be another ones tho 0.6 an 0.4 and etc
+        double center = quantized + (bit ? delta * 0.75 : delta * 0.25);
         return (byte)Math.Clamp(center, 0, 255);
     }
 
@@ -22,4 +22,26 @@ public static class QimHelper
     {
         return activeChannels > 0 && bitCount * 2 > activeChannels;
     }
+
+    public static short QimEmbedBit(short coeff, bool bit, int delta)
+    {
+        // For negative coefficients, we need to handle the modulo differently
+        int sign = Math.Sign(coeff);
+        short absCoeff = (short)Math.Abs(coeff);
+        
+        double quantized = Math.Floor((double)absCoeff / delta) * delta;
+        double center = quantized + (bit ? delta * 0.75 : delta * 0.25);
+        
+        // Preserve sign of original coefficient
+        return (short)(sign * center);
+    }
+    
+    // Add a matching extraction method for short values
+    public static bool QimExtractBit(short coeff, int delta)
+    {
+        double absCoeff = Math.Abs(coeff);
+        double mod = absCoeff - Math.Floor(absCoeff / delta) * delta;
+        return mod >= delta * 0.5;
+    }
+
 }

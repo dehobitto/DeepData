@@ -1,17 +1,30 @@
-namespace DeepData.Stego.Utils;
+namespace DeepData.Core.Utils;
 
-public class BitWorker(int size)
+public class BitWorker
 {
-    private readonly bool[] _bits = new bool[size];
+    private readonly bool[] _bits;
     private int BitIndex { get; set; }
 
-    public static BitWorker FromBytes(byte[] data)
+    public BitWorker(int size)
     {
+        _bits = new bool[size];
+    }
+
+    public static BitWorker CreateFromBytes(byte[] data)
+    {
+        // Проверка максимальной длины
+        if (data.Length > int.MaxValue / 8 - Constants.HeaderBits)
+            throw new ArgumentException("Data too large");
+    
         var bw = new BitWorker(Constants.HeaderBits + data.Length * 8);
-        
-        bw.Write(data);
+    
+        // Записываем длину как 32 бита (uint)
+        bw.WriteUInt32((uint)data.Length);
+    
+        foreach (byte b in data)
+            bw.WriteByte(b);
+    
         bw.Restart();
-        
         return bw;
     }
 
@@ -21,7 +34,7 @@ public class BitWorker(int size)
         _bits[BitIndex++] = value;
     }
 
-    public void Write(byte[] bytes)
+    public void WriteWithLength(byte[] bytes)
     {
         WriteInt(bytes.Length, Constants.HeaderBits);
         
@@ -30,10 +43,18 @@ public class BitWorker(int size)
             WriteByte(b);
         }
     }
-
-    public void WriteBitsFromByte(byte value, int bitCount)
+    
+    public void Write(byte[] bytes)
     {
-        for (int i = bitCount - 1; i >= 0; i--)
+        foreach (var b in bytes)
+        {
+            WriteByte(b);
+        }
+    }
+
+    public void WriteNLastBits(byte value, int n)
+    {
+        for (int i = n - 1; i >= 0; i--)
         {
             Write(((value >> i) & 1) == 1);
         }
@@ -45,11 +66,11 @@ public class BitWorker(int size)
         return _bits[BitIndex++];
     }
 
-    public byte ReadBits(int bitCount)
+    public byte ReadNBytes(int n)
     {
         byte result = 0;
         
-        for (int i = bitCount - 1; i >= 0 && !IsEnded(); i--)
+        for (int i = n - 1; i >= 0 && !IsEnded(); i--)
         {
             if (ReadBit())
             {
@@ -59,51 +80,75 @@ public class BitWorker(int size)
         
         return result;
     }
-
-    public int ReadInt(int bitCount)
+    
+    public uint ReadUInt32(int bitCount = 32)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(bitCount);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(bitCount, 32);
+        if (bitCount > 32) 
+            throw new ArgumentException("Max 32 bits for UInt32");
 
-        int result = 0;
+        uint result = 0;
+        for (int i = bitCount - 1; i >= 0; i--)
+        {
+            if (ReadBit())
+                result |= (1U << i);
+        }
+        return result;
+    }
+
+    public int ReadNLastBits(int bitCount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(bitCount);
         
+        long result = 0;
+    
         for (int i = bitCount - 1; i >= 0; i--)
         {
             if (ReadBit())
             {
-                result |= (1 << i);
+                result |= (1L << i);
             }
         }
         
-        return result;
+        return (int)result;
+    }
+    
+    public void WriteUInt32(uint value, int bitCount = 32)
+    {
+        for (int i = bitCount - 1; i >= 0; i--)
+        {
+            Write((value & (1U << i)) != 0);
+        }
     }
 
-    public byte[] ReadBytes()
+    public byte[] ReadBytes(int maxLen)
     {
-        EnsureNotEnded();
         Restart();
-
-        int length = ReadInt(Constants.HeaderBits);
         
-        if (length < 0)
-        {
-            throw new InvalidOperationException("Invalid length detected");
-        }
+        uint length = ReadUInt32(Constants.HeaderBits);
 
-        var bytes = new byte[length];
-        
+        int requiredBits = (int)(length * 8);
+        if (BitIndex + requiredBits > _bits.Length)
+            throw new InvalidDataException("Not enough bits for payload");
+    
+        byte[] bytes = new byte[length];
         for (int i = 0; i < length; i++)
         {
             bytes[i] = ReadByte();
         }
-        
         return bytes;
     }
 
-    public void Restart() => BitIndex = 0;
-    public bool IsEnded() => BitIndex >= _bits.Length;
+    public void Restart()
+    {
+        BitIndex = 0;
+    }
 
-    // Private helpers
+    public bool IsEnded()
+    {
+        return BitIndex >= _bits.Length;
+    }
+
     private void WriteByte(byte value)
     {
         for (int i = 7; i >= 0; i--)
@@ -123,6 +168,7 @@ public class BitWorker(int size)
     private byte ReadByte()
     {
         byte result = 0;
+        
         for (int i = 0; i < 8; i++)
         {
             if (ReadBit())
@@ -133,7 +179,7 @@ public class BitWorker(int size)
         
         return result;
     }
-
+    
     private void EnsureNotEnded()
     {
         if (IsEnded())

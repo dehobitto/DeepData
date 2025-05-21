@@ -1,7 +1,7 @@
 using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Png;
 
-namespace DeepData.Stego;
+namespace DeepData.Core;
 
 public record Options
 {
@@ -16,6 +16,7 @@ public record Options
     public byte QimDelta { get; init; } = Constants.DefaultQimDelta;
     public byte LsbStrength { get; init; } = Constants.DefaultLsbStrength; 
     public (int R, int G, int B) Channels { get; init; } = Constants.DefaultChannels;
+    public (int Y, int Cb, int Cr) ChannelsJpeg = Constants.DefaultChannelsJpeg;
     public string FileName { get; init; } = Constants.DefaultFileName;
     public ImageEncoder Encoder { get; init; } = new PngEncoder();
 }

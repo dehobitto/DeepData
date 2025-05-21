@@ -1,50 +1,60 @@
-using DeepData.Stego;
-using DeepData.Stego.Extensions;
-using DeepData.Stego.Methods;
+using DeepData.Core;
+using DeepData.Core.Extensions;
+using DeepData.Core.Methods;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace DeepData.Test;
+namespace DeepData.Test.Methods;
 
 public class LsbTests
 {
     private const string FileName = "test1";
-    private readonly Image<Rgba32> _image = Image.Load<Rgba32>(Constants.TestImageInputPath + FileName + ".png");
+    private readonly Image<Rgba32> _image = Image.Load<Rgba32>(TestConstants.GetInputImagePath(FileName));
+
     [Fact]
     public void Lsb_Embed_Extract_NoSave()
     {
-        var steg = new Lsb();
         byte[] originalData = "Hello, Steganograph 12345!"u8.ToArray();
 
         var options = new Options
         {
-            LsbStrength = Constants.TestLsbStrength
+            LsbStrength = TestConstants.TestLsbStrength
         };
 
-        var embeddedImage = steg.Embed(_image.ToBytes(out _), originalData, options);
-        var extractedData = steg.Extract(embeddedImage, options);
+        var steg = new Lsb
+        {
+            Options = options
+        };
 
-        // Assert
+        var embeddedImage = steg.Embed(_image.ToBytes(out _), originalData);
+        var extractedData = steg.Extract(embeddedImage);
+
         Assert.Equal(originalData, extractedData);
     }
 
     [Fact]
     public void Lsb_Embed_Extract_Save()
     {
-        var steg = new Lsb();
-        byte[] originalData = "Hello, Steganograph 12345!"u8.ToArray();
+        byte[] originalData = "Hdfklgjdflkgjdf;lkgj hello world"u8.ToArray();
 
         var options = new Options
         {
-            LsbStrength = Constants.TestLsbStrength
+            LsbStrength = TestConstants.TestLsbStrength
         };
 
-        (int w, int h) size;
-        var embeddedImage = steg.Embed(_image.ToBytes(out size), originalData, options);
-        embeddedImage.ToImage(size).Save(Constants.TestImageOutputPath + FileName + "LsbOut.png", new PngEncoder());
-        using var imageTest = Image.Load<Rgba32>(Constants.TestImageOutputPath + FileName + "LsbOut.png");
-        var extractedData = steg.Extract(imageTest.ToBytes(out _), options);
+        var steg = new Lsb
+        {
+            Options = options
+        };
+
+        var embeddedImage = steg.Embed(_image.ToBytes(out var size), originalData);
+
+        var outputPath = TestConstants.GetOutputImagePath(FileName, "LsbOut");
+        embeddedImage.ToImage(size).Save(outputPath, new PngEncoder());
+
+        using var imageTest = Image.Load<Rgba32>(outputPath);
+        var extractedData = steg.Extract(imageTest.ToBytes(out _));
 
         Assert.Equal(originalData, extractedData);
     }

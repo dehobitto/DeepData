@@ -1,6 +1,6 @@
-namespace DeepData.Stego.Interfaces;
+namespace DeepData.Core.Interfaces;
 
-public interface IStegoMethod<TSource, TPayload> 
+public interface IStegoMethod<TSource, TPayload>
 {
     /// <summary>
     /// Small generic interface so it's easier to handle methods
@@ -14,4 +14,5 @@ public interface IStegoMethod<TSource, TPayload>
     
     TSource Embed(TSource source, byte[] data);
     TPayload Extract(TSource source);
+    Options Options { get; set; }
 }

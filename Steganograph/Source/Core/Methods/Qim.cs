@@ -1,21 +1,26 @@
-using DeepData.Stego.Interfaces;
-using DeepData.Stego.Utils;
+using DeepData.Core.Models;
+using DeepData.Core.Utils;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
-namespace DeepData.Stego.Methods;
+namespace DeepData.Core.Methods;
 
 using static QimHelper;
 
-public class Qim(Options options) : IStegoMethod<Image<Rgba32>, byte[]>
+public class Qim : StegoMethod<Image<Rgba32>, byte[]>
 {
-    public Image<Rgba32> Embed(Image<Rgba32> source, byte[] data)
+    public override Image<Rgba32> Embed(Image<Rgba32> source, byte[] data)
     {
-        BitWorker bw = BitWorker.FromBytes(data);
+        if (!WillFit(source, data))
+        {
+            throw new ArgumentException("The source image does not fit the required data.");
+        }
+        
+        BitWorker bw = BitWorker.CreateFromBytes(data);
 
         var result = source.Clone();
-        var delta = options.QimDelta;
-        var channels = options.Channels;
+        var delta = Options.QimDelta;
+        var channels = Options.Channels;
 
         for (int y = 0; y < result.Height && !bw.IsEnded(); y++)
         for (int x = 0; x < result.Width && !bw.IsEnded(); x++)
@@ -24,9 +29,20 @@ public class Qim(Options options) : IStegoMethod<Image<Rgba32>, byte[]>
 
             bool bit = bw.ReadBit();
 
-            if (channels.R == 1) px.R = QimEmbedBit(px.R, bit, delta);
-            if (channels.G == 1) px.G = QimEmbedBit(px.G, bit, delta);
-            if (channels.B == 1) px.B = QimEmbedBit(px.B, bit, delta);
+            if (channels.R == 1)
+            {
+                px.R = QimEmbedBit(px.R, bit, delta);
+            }
+
+            if (channels.G == 1)
+            {
+                px.G = QimEmbedBit(px.G, bit, delta);
+            }
+
+            if (channels.B == 1)
+            {
+                px.B = QimEmbedBit(px.B, bit, delta);
+            }
 
             result[x, y] = px;
         }
@@ -34,15 +50,13 @@ public class Qim(Options options) : IStegoMethod<Image<Rgba32>, byte[]>
         return result;
     }
 
-    public byte[] Extract(Image<Rgba32> source)
+    public override byte[] Extract(Image<Rgba32> source)
     {
-        int totalPixels = source.Width * source.Height;
-        int channelsCount = options.Channels.R + options.Channels.G + options.Channels.B;
-        int totalBits = totalPixels * channelsCount;
+        int totalBits = source.Width * source.Height;
     
         BitWorker bw = new BitWorker(totalBits);
 
-        int delta = options.QimDelta;
+        int delta = Options.QimDelta;
 
         for (int y = 0; y < source.Height; y++)
         for (int x = 0; x < source.Width; x++)
@@ -51,9 +65,9 @@ public class Qim(Options options) : IStegoMethod<Image<Rgba32>, byte[]>
 
             var channelValues = new[]
             {
-                (options.Channels.R == 1, pixel.R),
-                (options.Channels.G == 1, pixel.G),
-                (options.Channels.B == 1, pixel.B)
+                (Options.Channels.R == 1, pixel.R),
+                (Options.Channels.G == 1, pixel.G),
+                (Options.Channels.B == 1, pixel.B)
             };
 
             int bitCount = 0;
@@ -78,7 +92,13 @@ public class Qim(Options options) : IStegoMethod<Image<Rgba32>, byte[]>
             bw.Write(finalBit);
         }
 
-        return bw.ReadBytes();
+        return bw.ReadBytes(totalBits);
     }
 
+    public override bool WillFit(Image<Rgba32> source, byte[] payload)
+    {
+        int maxBytes = (source.Width * source.Height - Constants.HeaderBits) / 8;
+        
+        return maxBytes >= payload.Length;
+    }
 }

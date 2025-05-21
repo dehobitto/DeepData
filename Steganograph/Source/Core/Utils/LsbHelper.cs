@@ -1,4 +1,4 @@
-namespace DeepData.Stego.Utils;
+namespace DeepData.Core.Utils;
 
 public static class LsbHelper
 {

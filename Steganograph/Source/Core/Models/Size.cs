@@ -1,7 +1,7 @@
-namespace DeepData.Stego.Models;
+namespace DeepData.Core.Models;
 
-public class Size((int width, int height) size)
+public class Size(int width, int height)
 {
-    public int w => size.width;
-    public int h => size.height;
+    public int W => width;
+    public int H => height;
 }

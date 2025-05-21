@@ -9,14 +9,21 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="BitMiracle.LibJpeg.NET" Version="1.5.324" />
       <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8" />
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Docs\" />
-      <Folder Include="Source\Data\Input\" />
-      <Folder Include="Source\Data\Output\" />
-      <Folder Include="Source\Data\Test\Out\" />
+      <Folder Include="Output\" />
+      <Folder Include="Source\CliApp\" />
+      <Folder Include="Source\Core\Completer\" />
+      <Folder Include="Source\TuiApp\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="3.pdf">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

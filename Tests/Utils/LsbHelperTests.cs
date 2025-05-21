@@ -1,26 +1,27 @@
+using DeepData.Core.Utils;
+
 namespace DeepData.Test.Utils;
 
-public class LsbHelper
+public class LsbHelperTests
 {
     [Theory]
-    [InlineData(100)]
-    [InlineData(150)]
-    [InlineData(255)]
     [InlineData(0)]
-    public void ValidateLsbStrength_Should_Give_Exception(byte strength)
+    [InlineData(9)]
+    public static void ValidateLsbStrength_ShouldGiveException(byte strength)
     {
-        Assert.Throws<ArgumentOutOfRangeException>(ValidateLsbStrength);
+        Assert.Throws<ArgumentOutOfRangeException>(() => LsbHelper.ValidateLsbStrength(strength));
     }
 
     [Theory]
-    [InlineData(130, 10, false)]
-    [InlineData(125, 10, true)]
-    [InlineData(200, 20, false)]
-    [InlineData(210, 20, true)]
-    [InlineData(100, 20, false)]
-    public void CreateBitMask(byte val, int delta, bool expected)
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    public void CreateBitMask(byte bitsPerByte)
     {
-        var bit = QimHelper.QimExtractBit(val, delta);
-        Assert.Equal(expected, bit);
+        byte bitmask = LsbHelper.CreateBitMask(bitsPerByte);
+        double expected = Math.Pow(2, bitsPerByte) - 1;
+        Assert.Equal(expected, bitmask);
     }
 }
