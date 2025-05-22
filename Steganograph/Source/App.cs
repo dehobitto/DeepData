@@ -1,6 +1,8 @@
 using System.Text;
 using DeepData.Core;
+using DeepData.Core.Extensions;
 using DeepData.Core.Methods;
+using System.IO;
 
 namespace DeepData;
 
@@ -8,71 +10,106 @@ public class App
 {
     public void Run()
     {
-        byte[] data = File.ReadAllBytes(Path.Combine(Constants.ProjectRoot, "3.pdf"));
-        //stg.Embed(data);
+        string fileToHidePath = Path.Combine(Constants.ProjectRoot, "PoP.zip");
+        string carrierImagePath = Path.Combine(Constants.ProjectRoot, "Docs", "1.jpg");
+        string embeddedOutputPath = Path.Combine(Constants.ProjectRoot, "output.jpg");
+        string extractedOutputFileName = "extracted_output";
 
-        var steg = new DctJpeg
+        string originalFileExtension = Path.GetExtension(fileToHidePath).TrimStart('.');
+        byte[] fileDataToHide = File.ReadAllBytes(fileToHidePath);
+
+        byte[] extensionBytes = Encoding.UTF8.GetBytes(originalFileExtension);
+        byte[] dataToEmbed = new byte[fileDataToHide.Length + extensionBytes.Length];
+        Buffer.BlockCopy(fileDataToHide, 0, dataToEmbed, 0, fileDataToHide.Length);
+        Buffer.BlockCopy(extensionBytes, 0, dataToEmbed, fileDataToHide.Length, extensionBytes.Length);
+
+        var steganographyMethod = new DctJpeg { Options = new Options() };
+
+        Func<long, double> toMegabytes = bytes => (double)bytes / 1024 / 1024;
+
+        Console.WriteLine("--- Steganography Process ---");
+
+        using (FileStream carrierFs = File.OpenRead(carrierImagePath))
         {
-            Options = new Options()
-        };
+            long maxCapacityBytes = steganographyMethod.GetCapacityBytes(carrierFs);
+            Console.WriteLine($"Maximum carrier capacity: {toMegabytes(maxCapacityBytes):F5} MB");
+            Console.WriteLine($"Data to embed size: {toMegabytes(dataToEmbed.Length):F5} MB");
 
-        // ... (Constants, data, steg setup)
-
-        using FileStream fs = File.OpenRead(Path.Combine(Constants.ProjectRoot, "Docs", "image.jpg"));
-        var embeddedStream = steg.Embed(fs, data); // This stream contains the embedded data
-        fs.Close(); // Close the stream for the original input image
-
-// 1. Save the embeddedStream to a new file
-        string outputPath = Path.Combine(Constants.DefaultImageOutputPath, "output.jpg");
-        using (FileStream fileOut = File.Create(outputPath))
-        {
-            embeddedStream.CopyTo(fileOut);
+            if (dataToEmbed.Length > maxCapacityBytes)
+            {
+                Console.WriteLine("Error: Data to embed exceeds carrier capacity. Aborting.");
+                return;
+            }
         }
-        embeddedStream.Close(); // Make sure to close the in-memory stream after copying
 
-        Console.WriteLine($"Embedded image saved to: {outputPath}");
-
-// 2. Now, open the saved file to extract the data
-        using FileStream outFsForExtraction = File.OpenRead(outputPath);
-        var extractedData = steg.Extract(outFsForExtraction);
-        outFsForExtraction.Close(); // Close the stream used for extraction
-
-        Console.WriteLine("Size1 " + data.Length);
-        Console.WriteLine("Size2 " + extractedData.Length);
-
-// ... rest of your code for verification
-
-        File.WriteAllBytes(Path.Combine(Constants.DefaultImageOutputPath, "output.pdf"), extractedData);
-// ... (rest of your verification code)
-
-        var path = Path.Combine(Constants.DefaultImageOutputPath, "output.pdf");
-        Console.WriteLine("Writing to " + path);
-        Console.WriteLine("Data size: " + extractedData.Length); // должно быть 80_000+ байт
-
-        Console.WriteLine(Encoding.UTF8.GetString(data));
-
-// Проверка, что всё ок
-        var info = new FileInfo(path);
-        Console.WriteLine("Saved file size: " + info.Length);
-        
-        if (data.Length != extractedData.Length)
+        using (FileStream carrierFs = File.OpenRead(carrierImagePath))
+        using (Stream embeddedResultStream = steganographyMethod.Embed(carrierFs, dataToEmbed))
         {
-            Console.WriteLine($"Size mismatch: {data.Length} vs {extractedData.Length}");
+            using (FileStream outputFs = File.Create(embeddedOutputPath))
+            {
+                embeddedResultStream.CopyTo(outputFs);
+            }
+        }
+
+        Console.WriteLine($"Embedded image saved to: {embeddedOutputPath}");
+
+        byte[] extractedData;
+        using (FileStream embeddedFs = File.OpenRead(embeddedOutputPath))
+        {
+            extractedData = steganographyMethod.Extract(embeddedFs);
+        }
+        Console.WriteLine($"Extracted data size: {extractedData.Length} bytes");
+
+        string extractedExtension = string.Empty;
+        if (extractedData.Length >= originalFileExtension.Length)
+        {
+            byte[] potentialExtensionBytes = new byte[originalFileExtension.Length];
+            Buffer.BlockCopy(extractedData, extractedData.Length - originalFileExtension.Length, potentialExtensionBytes, 0, originalFileExtension.Length);
+            extractedExtension = Encoding.UTF8.GetString(potentialExtensionBytes);
+
+            byte[] extractedFileContent = new byte[extractedData.Length - originalFileExtension.Length];
+            Buffer.BlockCopy(extractedData, 0, extractedFileContent, 0, extractedFileContent.Length);
+            extractedData = extractedFileContent;
         }
         else
         {
-            for (int i = 0; i < data.Length; i++)
+            Console.WriteLine("Warning: Extracted data is too short to contain the expected extension.");
+        }
+        
+        string extractedFilePath = Path.Combine(Constants.DefaultImageOutputPath, $"{extractedOutputFileName}.{extractedExtension}");
+        File.WriteAllBytes(extractedFilePath, extractedData);
+        Console.WriteLine($"Extracted file saved to: {extractedFilePath}");
+
+        Console.WriteLine("--- Data Integrity Check ---");
+        Console.WriteLine($"Original data (file content) size: {fileDataToHide.Length} bytes");
+        Console.WriteLine($"Extracted data (file content) size: {extractedData.Length} bytes");
+
+        if (fileDataToHide.Length != extractedData.Length)
+        {
+            Console.WriteLine($"Mismatch: Original and extracted file content sizes differ.");
+        }
+        else
+        {
+            bool match = true;
+            for (int i = 0; i < fileDataToHide.Length; i++)
             {
-                if (data[i] != extractedData[i])
+                if (fileDataToHide[i] != extractedData[i])
                 {
-                    Console.WriteLine($"Byte mismatch at {i}: original={data[i]}, extracted={extractedData[i]}");
+                    Console.WriteLine($"Mismatch at byte {i}: Original={fileDataToHide[i]}, Extracted={extractedData[i]}");
+                    match = false;
+                    break;
                 }
             }
-            Console.WriteLine("Files are identical.");
+
+            if (match)
+            {
+                Console.WriteLine("Original and extracted file contents are identical.");
+            }
         }
-
-
+        
+        GC.Collect();
+        
+        Console.WriteLine("--- Process Complete ---");
         Console.ReadKey();
-
     }
 }

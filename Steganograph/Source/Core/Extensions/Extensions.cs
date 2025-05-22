@@ -38,4 +38,14 @@ public static class Extensions
         var heightField = typeof(jpeg_component_info).GetField("height_in_blocks", BindingFlags.NonPublic | BindingFlags.Instance);
         return (int)heightField.GetValue(component);
     }
+    
+    public static byte[] ConcatBytes(this byte[] source, byte[] other)
+    {
+        if (source == null && other == null) return new byte[0];
+        if (source == null) return other;
+        if (other == null) return source;
+
+        // Используем LINQ Concat для краткости, можно заменить на Buffer.BlockCopy для производительности
+        return source.Concat(other).ToArray();
+    }
 }

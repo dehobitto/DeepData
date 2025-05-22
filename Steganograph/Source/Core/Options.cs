@@ -17,6 +17,7 @@ public record Options
     public byte LsbStrength { get; init; } = Constants.DefaultLsbStrength; 
     public (int R, int G, int B) Channels { get; init; } = Constants.DefaultChannels;
     public (int Y, int Cb, int Cr) ChannelsJpeg = Constants.DefaultChannelsJpeg;
+    public int JpegBlocksCount { get; init; } = Constants.JpegBlocksCount;
     public string FileName { get; init; } = Constants.DefaultFileName;
     public ImageEncoder Encoder { get; init; } = new PngEncoder();
 }

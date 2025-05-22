@@ -151,6 +151,12 @@ public class BitWorker
         return _bits[_currentBitIndex++];
     }
 
+    public bool PeekBit()
+    {
+        ThrowIfPositionAtEnd();
+        return _bits[_currentBitIndex];
+    }
+
     /// <summary>
     /// Reads a specified number of bits and converts them to an unsigned 32-bit integer.
     /// </summary>

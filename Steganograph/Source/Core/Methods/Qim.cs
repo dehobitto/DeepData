@@ -103,7 +103,7 @@ public class Qim : StegoMethod<Image<Rgba32>, byte[]>
         return maxBytes >= payload.Length;
     }
 
-    public override int GetCapacity(Image<Rgba32> source)
+    public override int GetCapacityBytes(Image<Rgba32> source)
     {
         return source.Width * source.Height * (Options.Channels.R + Options.Channels.G + Options.Channels.B);
     }

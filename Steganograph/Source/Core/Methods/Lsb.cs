@@ -31,7 +31,7 @@ public class Lsb : StegoMethod<byte[], byte[]>
         int requiredTotalBits = Constants.HeaderBits + (data.Length * 8);
 
         // Get available capacity based on source and LSB strength
-        int availableCapacityBits = GetCapacity(source);
+        int availableCapacityBits = GetCapacityBytes(source);
 
         if (availableCapacityBits < requiredTotalBits)
         {
@@ -151,7 +151,7 @@ public class Lsb : StegoMethod<byte[], byte[]>
         int requiredBits = (payload.Length * 8) + Constants.HeaderBits;
 
         // Get available capacity in bits
-        int availableBits = GetCapacity(source);
+        int availableBits = GetCapacityBytes(source);
 
         return availableBits >= requiredBits;
     }
@@ -163,7 +163,7 @@ public class Lsb : StegoMethod<byte[], byte[]>
     /// <returns>The maximum embedding capacity in bits.</returns>
     /// <exception cref="ArgumentNullException">Thrown if <paramref name="source"/> is null.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Thrown if LSB strength is invalid.</exception>
-    public override int GetCapacity(byte[] source)
+    public override int GetCapacityBytes(byte[] source)
     {
         ArgumentNullException.ThrowIfNull(source);
         ValidateLsbStrength(Options.LsbStrength);
