@@ -1,8 +1,10 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Steganograph", "Steganograph\Steganograph.csproj", "{AD51E923-BD75-4465-8002-D0D2474FFE20}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeepData.Steganograph", "DeepData.Steganograph\DeepData.Steganograph.csproj", "{AD51E923-BD75-4465-8002-D0D2474FFE20}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{467A0441-5329-4C6D-B31A-6958FFC809F7}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeepData.Tests", "DeepData.Tests\DeepData.Tests.csproj", "{467A0441-5329-4C6D-B31A-6958FFC809F7}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeepData.CLI", "DeepData.CLI\DeepData.CLI.csproj", "{603570D5-F7BC-425E-B6C7-0F6E532889BB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +20,9 @@ Global
 		{467A0441-5329-4C6D-B31A-6958FFC809F7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{467A0441-5329-4C6D-B31A-6958FFC809F7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{467A0441-5329-4C6D-B31A-6958FFC809F7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{603570D5-F7BC-425E-B6C7-0F6E532889BB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{603570D5-F7BC-425E-B6C7-0F6E532889BB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{603570D5-F7BC-425E-B6C7-0F6E532889BB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{603570D5-F7BC-425E-B6C7-0F6E532889BB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
