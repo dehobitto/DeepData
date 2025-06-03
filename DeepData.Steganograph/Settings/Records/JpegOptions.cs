@@ -4,7 +4,7 @@ public record JpegOptions
 {
     public JpegOptions() {}
 
-    public JpegOptions(JpegChannels channels, int blocks)
+    public JpegOptions(JpegChannels channels, int blocks, int delta)
     {
         Channels = channels;
 
@@ -14,8 +14,10 @@ public record JpegOptions
         }
 
         Blocks = blocks;
+        Delta = delta;
     }
 
     public JpegChannels Channels { get; init; } = StegoConstants.DefaultJpegChannels;
     public int Blocks { get; init; } = StegoConstants.DefaultJpegBlocksCount;
+    public int Delta { get; init; } = StegoConstants.DefaultQimDelta;
 }

@@ -1,6 +1,6 @@
 using BitMiracle.LibJpeg.Classic;
+using DeepData.Abstractions;
 using DeepData.Extensions;
-using DeepData.Models;
 using DeepData.Settings;
 using DeepData.Utils;
 using DeepData.Utils.StegoSpecific;
@@ -10,6 +10,7 @@ namespace DeepData.Methods;
 
 public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
 {
+    private int _processed;
     public override Stream Embed(Stream source, byte[] data)
     {
         var decompressionResult = JpegHelper.Decompress(source);
@@ -66,7 +67,7 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
                     continue;
                 }
 
-                currentBlock[i] = QimEmbedBit(coefficient, bitWorker.ReadBit(), Options.Qim.Delta);
+                currentBlock[i] = QimEmbedBit(coefficient, bitWorker.ReadBit(), Options.Jpeg.Delta);
             }
 
             return false;
@@ -170,7 +171,7 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
                     return true;
                 }
 
-                var extractedBit = QimExtractBit(coefficient, Options.Qim.Delta);
+                var extractedBit = QimExtractBit(coefficient, Options.Jpeg.Delta);
                 bitWorker.WriteBit(extractedBit);
             }
 
@@ -227,10 +228,12 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
         jpeg_component_info componentInfo,
         Func<JBLOCK, bool> blockAction)
     {
+        long total = componentInfo.Height_in_blocks() * componentInfo.Width_in_blocks;
         for (var row = 0; row < componentInfo.Height_in_blocks(); row++)
         for (var col = 0; col < componentInfo.Width_in_blocks; col++)
         {
             var currentBlock = blocks[row][col];
+            Progress?.Update(++_processed, total);
             if (blockAction(currentBlock))
             {
                 return;
@@ -240,7 +243,7 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
 
     private bool IsCoefficientSkippableForEmbedding(short coefficient, bool bit)
     {
-        return coefficient == 0 || QimEmbedBit(coefficient, bit, Options.Qim.Delta) == 0;
+        return coefficient == 0 || QimEmbedBit(coefficient, bit, Options.Jpeg.Delta) == 0;
     }
 
     private bool IsCoefficientSkippableForExtraction(short coefficient)

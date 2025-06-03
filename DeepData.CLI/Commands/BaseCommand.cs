@@ -29,12 +29,14 @@ public abstract class BaseCommand(CommandArgs args) : ICommand
             case Stego.Qim:
             {
                 var qim = new Qim(Options);
+                
                 return qim.GetCapacityBytes(InputImage);
             }
             case Stego.Lsb:
             {
                 var lsb = new Lsb(Options);
-                var bytes = InputImage.ToBytes(out _);
+                byte[] bytes = InputImage.ToBytes(out _);
+                
                 return lsb.GetCapacityBytes(bytes);
             }
             case Stego.Dct:

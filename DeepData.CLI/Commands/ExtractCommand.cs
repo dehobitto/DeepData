@@ -2,6 +2,7 @@ using DeepData.CLI.Utils;
 using DeepData.Extensions;
 using DeepData.Methods;
 using DeepData.Settings;
+using SixLabors.ImageSharp.Formats.Jpeg;
 using CommandArgs = DeepData.CLI.Models.CommandArgs;
 
 namespace DeepData.CLI.Commands;
@@ -21,21 +22,39 @@ public class ExtractCommand(CommandArgs args) : BaseCommand(args)
             switch (Args.GetStegoMethod())
             {
                 case Stego.Qim:
+                {
                     var qim = new Qim(Options);
-                    
+
                     qim.SetProgress(progressBar);
                     data = qim.Extract(InputImage);
-                    
+
                     break;
+                }
                 case Stego.Lsb:
+                {
                     var lsb = new Lsb(Options);
-                    
+
                     lsb.SetProgress(progressBar);
                     data = lsb.Extract(InputImage.ToBytes(out _));
+
+                    break;
+                }
+                case Stego.Dct:
+                {
+                    var dct = new Dct(Options);
+                    
+                    dct.SetProgress(progressBar);
+                    
+                    using var jpegStream = File.OpenRead(Args.InputImagePath!);
+
+                    data = dct.Extract(jpegStream);
                     
                     break;
+                }
                 default:
+                {
                     throw new ArgumentException("Unsupported method");
+                }
             }
 
             File.WriteAllBytes(Args.OutputPath!, data);

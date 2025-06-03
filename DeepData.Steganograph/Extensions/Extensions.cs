@@ -35,11 +35,4 @@ public static class Extensions
             typeof(jpeg_component_info).GetField("height_in_blocks", BindingFlags.NonPublic | BindingFlags.Instance);
         return (int)heightField!.GetValue(component)!;
     }
-    
-    public static string GetExtension(this string fileName)
-    {
-        string extension = fileName.Split(".").Last();
-        
-        return extension;
-    }
 }

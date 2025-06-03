@@ -12,6 +12,7 @@ public enum ImageChannels
 [Flags]
 public enum JpegChannels
 {
+    None = 0,
     Y = 1 << 0,
     Cb = 1 << 1,
     Cr = 1 << 2,

@@ -9,25 +9,67 @@ public static class SettingsBuilder
     public static Options BuildOptions(CommandArgs args)
     {
         var options = new Options();
-        var extension = Path.GetExtension(args.InputImagePath!).ToLowerInvariant();
-        var isLossy = Constants.LossyFormats.Contains(extension);
 
         switch (args.GetStegoMethod())
         {
             case Stego.Qim:
-                return BuildQimOptions(args.Settings, isLossy);
+            {
+                return BuildQimOptions(args.Settings);
+            }
             case Stego.Lsb:
+            {
                 return BuildLsbOptions(args.Settings);
+            }
+            case Stego.Dct:
+            {
+                return BuildDctOptions(args.Settings);
+            }
             default:
+            {
                 return options;
+            }
         }
     }
 
-    private static Options BuildQimOptions(Dictionary<string, string> settings, bool isLossy)
+    private static Options BuildDctOptions(Dictionary<string, string> settings)
     {
         var jpegChannels = StegoConstants.DefaultJpegChannels;
-        var imageChannels = StegoConstants.DefaultQimChannels;
         var blocks = StegoConstants.DefaultJpegBlocksCount;
+        var delta = StegoConstants.DefaultQimDelta;
+        
+        if (settings.TryGetValue("channels", out var channelsStr))
+        {
+            var channels = channelsStr.Split(',')
+                .Select(c => c.Trim().ToUpper())
+                .ToList();
+            
+            jpegChannels = JpegChannels.None;
+
+            foreach (var channelName in channels)
+            {
+                jpegChannels |= GetJpegChannel(channelName);
+            }
+        }
+        
+        if (settings.TryGetValue("blocks", out var blocksStr) && int.TryParse(blocksStr, out var blocksValue))
+        {
+            blocks = blocksValue;
+        }
+        
+        if (settings.TryGetValue("delta", out var deltaStr) && byte.TryParse(deltaStr, out var deltaValue))
+        {
+            delta = deltaValue;
+        }
+        
+        return new Options
+        {
+            Jpeg = new JpegOptions(jpegChannels, blocks, delta)
+        };
+    }
+
+    private static Options BuildQimOptions(Dictionary<string, string> settings)
+    {
+        var imageChannels = StegoConstants.DefaultQimChannels;
         var delta = StegoConstants.DefaultQimDelta;
 
         if (settings.TryGetValue("channels", out var channelsStr))
@@ -35,26 +77,11 @@ public static class SettingsBuilder
             var channels = channelsStr.Split(',')
                 .Select(c => c.Trim().ToUpper())
                 .ToList();
-
-            if (isLossy)
-            {
-                jpegChannels = channels.Aggregate(
-                    JpegChannels.All,
-                    (current, channel) => current & ~GetJpegChannel(channel)
-                );
-            }
-            else
-            {
-                imageChannels = channels.Aggregate(
-                    ImageChannels.All,
-                    (current, channel) => current & ~GetImageChannel(channel)
-                );
-            }
-        }
-
-        if (settings.TryGetValue("blocks", out var blocksStr) && int.TryParse(blocksStr, out var blocksValue))
-        {
-            blocks = blocksValue;
+            
+            imageChannels = channels.Aggregate(
+                ImageChannels.All,
+                (current, channel) => current & ~GetImageChannel(channel)
+            );
         }
 
         if (settings.TryGetValue("delta", out var deltaStr) && byte.TryParse(deltaStr, out var deltaValue))
@@ -64,22 +91,13 @@ public static class SettingsBuilder
 
         return new Options
         {
-            Jpeg = new JpegOptions(jpegChannels, blocks),
             Qim = new QimOptions(delta, imageChannels)
         };
     }
 
     private static Options BuildLsbOptions(Dictionary<string, string> settings)
     {
-        var channels = StegoConstants.DefaultQimChannels;
         var strength = StegoConstants.DefaultLsbStrength;
-
-        if (settings.TryGetValue("channels", out var channelsStr))
-        {
-            channels = channelsStr.Split(',')
-                .Select(c => c.Trim().ToUpper())
-                .Aggregate(ImageChannels.All, (current, channel) => current & ~GetImageChannel(channel));
-        }
 
         if (settings.TryGetValue("strength", out var strengthStr) && byte.TryParse(strengthStr, out var strengthValue))
         {
@@ -88,7 +106,6 @@ public static class SettingsBuilder
 
         return new Options
         {
-            Qim = new QimOptions(StegoConstants.DefaultQimDelta, channels),
             Lsb = new LsbOptions(strength)
         };
     }

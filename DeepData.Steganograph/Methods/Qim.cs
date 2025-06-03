@@ -1,5 +1,4 @@
-using DeepData.Interfaces;
-using DeepData.Models;
+using DeepData.Abstractions;
 using DeepData.Settings;
 using DeepData.Utils;
 using DeepData.Utils.StegoSpecific;
@@ -12,13 +11,6 @@ using static QimHelper;
 
 public class Qim(Options options) : StegoMethod<Image<Rgba32>, byte[]>(options)
 {
-    private IProgress? _progress;
-
-    public void SetProgress(IProgress progress)
-    {
-        _progress = progress;
-    }
-
     public override Image<Rgba32> Embed(Image<Rgba32> source, byte[] data)
     {
         if (!WillFit(source, data))
@@ -57,7 +49,7 @@ public class Qim(Options options) : StegoMethod<Image<Rgba32>, byte[]>(options)
             }
 
             result[x, y] = px;
-            _progress?.Update(++currentPixel, totalPixels);
+            Progress?.Update(++currentPixel, totalPixels);
         }
 
         return result;
@@ -107,7 +99,7 @@ public class Qim(Options options) : StegoMethod<Image<Rgba32>, byte[]>(options)
             var finalBit = Vote(activeChannels, bitCount);
             
             bw.WriteBit(finalBit);
-            _progress?.Update(++currentPixel, totalPixels);
+            Progress?.Update(++currentPixel, totalPixels);
         }
 
         return bw.ReadBytesWithHeader();

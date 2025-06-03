@@ -163,22 +163,19 @@ public class CommandArgs
             throw new ArgumentException($"Unsupported image extension: {extension}. Supported: {string.Join(", ", SupportedImageFormats)}");
         }
 
-        var method = GetStegoMethod();
-        
-        if (method == Stego.Lsb && LossyFormats.Contains(extension))
-        {
-            throw new ArgumentException($"Can't use LSB method with LossyFormats: ({string.Join(", ", LossyFormats)}). Use QIM method instead");
-        }
-
         if (Settings.Count > 0 && Method == null)
         {
             throw new ArgumentException("You may want to specify method in order to specify settings.");
+        }
+        
+        if (LossyFormats.Contains(extension) && Method != Stego.Dct)
+        {
+            throw new ArgumentException("Only with formats lossy, DCT can work. -- Yoda");
         }
     }
 
     private void ParseSettings(string settingsStr)
     {
-        // Remove quotes if present
         settingsStr = settingsStr.Trim('"', '\'');
         
         var settings = settingsStr.Split(' ');
@@ -201,13 +198,6 @@ public class CommandArgs
         if (Method.HasValue)
         {
             return Method.Value;
-        }
-
-        var extension = Path.GetExtension(InputImagePath!).ToLowerInvariant();
-
-        if (LossyFormats.Contains(extension))
-        {
-            return Stego.Dct;
         }
         else
         {

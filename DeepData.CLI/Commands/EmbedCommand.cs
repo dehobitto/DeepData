@@ -28,23 +28,45 @@ public class EmbedCommand(CommandArgs args) : BaseCommand(args)
             switch (Args.GetStegoMethod())
             {
                 case Stego.Qim:
+                {
                     var qim = new Qim(Options);
-                    
+
                     qim.SetProgress(progressBar);
-                    
+
                     var qimResult = qim.Embed(InputImage, data);
                     qimResult.Save(outputPath, GetEncoder(outputPath));
-                    
+
                     break;
+                }
                 case Stego.Lsb:
+                {
                     var lsb = new Lsb(Options);
-                    
+
                     lsb.SetProgress(progressBar);
-                    
+
                     byte[] lsbResult = lsb.Embed(InputImage.ToBytes(out var size), data);
                     lsbResult.ToImage(size).Save(outputPath, GetEncoder(outputPath));
+
+                    break;
+                }
+                case Stego.Dct:
+                {
+                    var dct = new Dct(Options);
+
+                    dct.SetProgress(progressBar);
+
+                    using var jpegStream = File.OpenRead(Args.InputImagePath!);
+
+                    Stream dctResult = dct.Embed(jpegStream, data);
+                    
+                    var outputFs = File.OpenWrite(outputPath);
+                    dctResult.CopyTo(outputFs);
+                    
+                    outputFs.Close();
+                    dctResult.Close();
                     
                     break;
+                }
             }
 
             progressBar.Complete();

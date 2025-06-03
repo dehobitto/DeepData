@@ -1,3 +1,4 @@
+using DeepData.Abstractions;
 using DeepData.Interfaces;
 using DeepData.Models;
 using DeepData.Settings;
@@ -10,13 +11,6 @@ using static LsbHelper;
 
 public class Lsb(Options options) : StegoMethod<byte[], byte[]>(options)
 {
-    private IProgress? _progress;
-
-    public void SetProgress(IProgress progress)
-    {
-        _progress = progress;
-    }
-
     public override byte[] Embed(byte[] source, byte[] data)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -55,7 +49,7 @@ public class Lsb(Options options) : StegoMethod<byte[], byte[]>(options)
             }
 
             result[i] = (byte)((source[i] & ~bitMask) | (bitsToEmbed & bitMask));
-            _progress?.Update(++currentByte, totalBytes);
+            Progress?.Update(++currentByte, totalBytes);
         }
 
         return result;
@@ -81,7 +75,7 @@ public class Lsb(Options options) : StegoMethod<byte[], byte[]>(options)
         {
             var maskedBits = (byte)(b & bitMask);
             extractedBitsWorker.WriteBitsFromByte(maskedBits, Options.Lsb.Strength);
-            _progress?.Update(++currentByte, totalBytes);
+            Progress?.Update(++currentByte, totalBytes);
         }
 
         extractedBitsWorker.ResetPosition();
