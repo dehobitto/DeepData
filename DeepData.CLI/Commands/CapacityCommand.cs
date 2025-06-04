@@ -1,4 +1,4 @@
-using DeepData.CLI.Models;
+using DeepData.CLI.Utils;
 
 namespace DeepData.CLI.Commands;
 

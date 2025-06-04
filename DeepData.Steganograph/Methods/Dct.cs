@@ -11,24 +11,25 @@ namespace DeepData.Methods;
 public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
 {
     private int _processed;
+    
     public override Stream Embed(Stream source, byte[] data)
     {
         var decompressionResult = JpegHelper.Decompress(source);
         var coefficientArrays = decompressionResult.CoefArrays;
-        var bitWriter = BitWorker.CreateWithHeaderFromBytes(data);
+        
+        var bitWorker = BitWorker.CreateWithHeaderFromBytes(data);
 
-        var requiredTotalBits = (long)data.Length * 8 + StegoConstants.HeaderBits;
-        var availableCapacityBits = (long)GetCapacityBytes(source) * 8;
+        long requiredTotalBits = (long)data.Length * 8 + StegoConstants.HeaderBits;
+        long availableCapacityBits = (long)GetCapacityBytes(source) * 8;
 
         if (availableCapacityBits < requiredTotalBits)
         {
             throw new ArgumentException("The source image does not fit the required data.");
         }
 
-        ProcessComponents(decompressionResult, coefficientArrays,
-        (blocks, componentInfo) =>
+        ProcessComponents(decompressionResult, coefficientArrays, (blocks, componentInfo) =>
         {
-            EmbedDataIntoBlocks(blocks, componentInfo, bitWriter);
+            EmbedDataIntoBlocks(blocks, componentInfo, bitWorker);
         },
         compIndex =>
         {
@@ -44,42 +45,12 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
         return JpegHelper.Compress(decompressionResult, coefficientArrays);
     }
 
-    private void EmbedDataIntoBlocks(
-        JBLOCK[][] blocks,
-        jpeg_component_info componentInfo,
-        BitWorker bitWorker)
-    {
-        ProcessBlocks(blocks, componentInfo, currentBlock =>
-        {
-            for (var i = 1; i < Options.Jpeg.Blocks; i++)
-            {
-                var coefficient = currentBlock[i];
-
-                if (bitWorker.IsAtEnd())
-                {
-                    return true;
-                }
-
-                var bit = bitWorker.PeekBit();
-
-                if (IsCoefficientSkippableForEmbedding(coefficient, bit))
-                {
-                    continue;
-                }
-
-                currentBlock[i] = QimEmbedBit(coefficient, bitWorker.ReadBit(), Options.Jpeg.Delta);
-            }
-
-            return false;
-        });
-    }
-
     public override byte[] Extract(Stream source)
     {
         var decompressionResult = JpegHelper.Decompress(source);
         var coefficientArrays = decompressionResult.CoefArrays;
 
-        var potentialBitsToExtract = (long)GetCapacityBytes(source) * 8;
+        long potentialBitsToExtract = (long)GetCapacityBytes(source) * 8;
         
         if (potentialBitsToExtract < StegoConstants.HeaderBits)
         {
@@ -104,13 +75,13 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
         return bitReader.ReadBytesWithHeader();
     }
 
-    public override bool WillFit(
-        Stream source,
-        byte[] payload)
+    public override bool WillFit(Stream source, byte[] payload)
     {
-        var availableBits = (long)GetCapacityBytes(source) * 8;
+        ArgumentNullException.ThrowIfNull(source);
 
-        var requiredBits = StegoConstants.HeaderBits + (long)payload.Length * 8;
+        long availableBits = (long)GetCapacityBytes(source) * 8;
+
+        long requiredBits = StegoConstants.HeaderBits + (long)payload.Length * 8;
 
         return availableBits >= requiredBits;
     }
@@ -118,18 +89,20 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
     public override int GetCapacityBytes(Stream source)
     {
         var decompressionResult = JpegHelper.Decompress(source);
-        var capacityCount = 0;
+        int capacityCount = 0;
 
-        ProcessComponents(decompressionResult, decompressionResult.CoefArrays, 
-        (blocks, componentInfo) =>
+        ProcessComponents(decompressionResult, decompressionResult.CoefArrays, (blocks, componentInfo) =>
         {
             ProcessBlocks(blocks, componentInfo, currentBlock =>
             {
-                for (var i = 1; i < Options.Jpeg.Blocks; i++)
+                for (byte i = 1; i < Options.Jpeg.Blocks; i++)
                 {
-                    var coefficient = currentBlock[i];
+                    short coefficient = currentBlock[i];
 
-                    if (IsCoefficientSkippableForCapacity(coefficient)) continue;
+                    if (IsCoefficientSkippable(coefficient))
+                    {
+                        continue;
+                    }
 
                     capacityCount++;
                 }
@@ -150,43 +123,13 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
         return capacityCount / 8;
     }
 
-    private void ExtractDataFromBlocks(
-        JBLOCK[][] blocks,
-        jpeg_component_info componentInfo,
-        BitWorker bitWorker)
-    {
-        ProcessBlocks(blocks, componentInfo, currentBlock =>
-        {
-            for (var i = 1; i < Options.Jpeg.Blocks; i++)
-            {
-                var coefficient = currentBlock[i];
-
-                if (IsCoefficientSkippableForExtraction(coefficient))
-                {
-                    continue;
-                }
-
-                if (bitWorker.IsAtEnd())
-                {
-                    return true;
-                }
-
-                var extractedBit = QimExtractBit(coefficient, Options.Jpeg.Delta);
-                bitWorker.WriteBit(extractedBit);
-            }
-
-            return false;
-        });
-    }
-
-    private void ProcessComponents(
-        JpegDecompressResult decompressionResult,
+    private void ProcessComponents(JpegDecompressResult decompressionResult,
         jvirt_array<JBLOCK>[] coefficientArrays,
         Action<JBLOCK[][], jpeg_component_info> action,
         Func<int, bool> skipCondition)
     {
         var channels = Options.Jpeg.Channels;
-        var componentIndex = 0;
+        byte componentIndex = 0;
         
         if (channels.HasFlag(JpegChannels.Y) && componentIndex < decompressionResult.NumComponents)
         {
@@ -194,6 +137,7 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
             {
                 var componentInfo = decompressionResult.GetComponentInfo(componentIndex);
                 var blocks = JpegHelper.GetBlocks(coefficientArrays[componentIndex], componentInfo);
+                
                 action(blocks, componentInfo);
             }
 
@@ -206,6 +150,7 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
             {
                 var componentInfo = decompressionResult.GetComponentInfo(componentIndex);
                 var blocks = JpegHelper.GetBlocks(coefficientArrays[componentIndex], componentInfo);
+                
                 action(blocks, componentInfo);
             }
 
@@ -218,40 +163,96 @@ public class Dct(Options options) : StegoMethod<Stream, byte[]>(options)
             {
                 var componentInfo = decompressionResult.GetComponentInfo(componentIndex);
                 var blocks = JpegHelper.GetBlocks(coefficientArrays[componentIndex], componentInfo);
+                
                 action(blocks, componentInfo);
             }
         }
     }
 
-    private void ProcessBlocks(
-        JBLOCK[][] blocks,
-        jpeg_component_info componentInfo,
-        Func<JBLOCK, bool> blockAction)
+    private void ProcessBlocks(JBLOCK[][] blocks, 
+        jpeg_component_info componentInfo, 
+        Func<JBLOCK, bool> blockAction) 
     {
         long total = componentInfo.Height_in_blocks() * componentInfo.Width_in_blocks;
-        for (var row = 0; row < componentInfo.Height_in_blocks(); row++)
-        for (var col = 0; col < componentInfo.Width_in_blocks; col++)
+        
+        for (int row = 0; row < componentInfo.Height_in_blocks(); row++)
+        for (int col = 0; col < componentInfo.Width_in_blocks; col++)
         {
             var currentBlock = blocks[row][col];
+            
             Progress?.Update(++_processed, total);
+            
             if (blockAction(currentBlock))
             {
                 return;
             }
         }
     }
+    
+    private void ExtractDataFromBlocks(JBLOCK[][] blocks,
+        jpeg_component_info componentInfo,
+        BitWorker bitWorker)
+    {
+        ProcessBlocks(blocks, componentInfo, currentBlock =>
+        {
+            for (byte i = 1; i < Options.Jpeg.Blocks; i++)
+            {
+                short coefficient = currentBlock[i];
 
-    private bool IsCoefficientSkippableForEmbedding(short coefficient, bool bit)
+                if (IsCoefficientSkippable(coefficient))
+                {
+                    continue;
+                }
+
+                if (bitWorker.IsAtEnd())
+                {
+                    return true;
+                }
+
+                bool extractedBit = QimExtractBit(coefficient, Options.Jpeg.Delta);
+                
+                bitWorker.WriteBit(extractedBit);
+            }
+
+            return false;
+        });
+    }
+    
+    private void EmbedDataIntoBlocks(JBLOCK[][] blocks,
+        jpeg_component_info componentInfo,
+        BitWorker bitWorker)
+    {
+        ProcessBlocks(blocks, componentInfo, currentBlock =>
+        {
+            for (byte i = 1; i < Options.Jpeg.Blocks; i++)
+            {
+                short coefficient = currentBlock[i];
+
+                if (bitWorker.IsAtEnd())
+                {
+                    return true;
+                }
+
+                bool bit = bitWorker.PeekBit();
+
+                if (IsCoefficientSkippableBitIncluding(coefficient, bit))
+                {
+                    continue;
+                }
+
+                currentBlock[i] = QimEmbedBit(coefficient, bitWorker.ReadBit(), Options.Jpeg.Delta);
+            }
+
+            return false;
+        });
+    }
+
+    private bool IsCoefficientSkippableBitIncluding(short coefficient, bool bit)
     {
         return coefficient == 0 || QimEmbedBit(coefficient, bit, Options.Jpeg.Delta) == 0;
     }
 
-    private bool IsCoefficientSkippableForExtraction(short coefficient)
-    {
-        return coefficient == 0;
-    }
-
-    private bool IsCoefficientSkippableForCapacity(short coefficient)
+    private bool IsCoefficientSkippable(short coefficient)
     {
         return coefficient == 0;
     }

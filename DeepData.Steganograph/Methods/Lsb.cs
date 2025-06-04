@@ -1,6 +1,4 @@
 using DeepData.Abstractions;
-using DeepData.Interfaces;
-using DeepData.Models;
 using DeepData.Settings;
 using DeepData.Utils;
 using DeepData.Utils.StegoSpecific;
@@ -16,39 +14,27 @@ public class Lsb(Options options) : StegoMethod<byte[], byte[]>(options)
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(data);
 
-        var requiredTotalBits = StegoConstants.HeaderBits + data.Length * 8;
-        var availableCapacityBits = GetCapacityBytes(source);
-
-        if (availableCapacityBits < requiredTotalBits)
+        if (!WillFit(source, data))
         {
-            throw new ArgumentException("Length of source bytes exceeds available capacity");
+            throw new ArgumentException($"Data size ({data.Length} bytes) exceeds available capacity ({GetCapacityBytes(source) / 8} bytes) in source");
         }
 
         var dataBitWorker = BitWorker.CreateWithHeaderFromBytes(data);
-        var result = (byte[])source.Clone();
+        byte[] result = (byte[])source.Clone();
 
-        var bitMask = CreateBitMask(Options.Lsb.Strength);
-        var totalBytes = source.Length;
-        var currentByte = 0;
+        byte strength = Options.Lsb.Strength;
+
+        byte bitMask = CreateBitMask(strength);
+        
+        int totalBytes = source.Length;
+        int currentByte = 0;
 
         for (var i = 0; i < source.Length; i++)
         {
-            byte bitsToEmbed = 0;
+            byte bitsToEmbed = ReadBitsForEmbedding(dataBitWorker, strength);
             
-            for (var bitNum = 0; bitNum < Options.Lsb.Strength; bitNum++)
-            {
-                if (dataBitWorker.IsAtEnd())
-                {
-                    break;
-                }
-
-                if (dataBitWorker.ReadBit())
-                {
-                    bitsToEmbed |= (byte)(1 << (Options.Lsb.Strength - 1 - bitNum));
-                }
-            }
-
-            result[i] = (byte)((source[i] & ~bitMask) | (bitsToEmbed & bitMask));
+            result[i] = ApplyBitsToSourceByte(source[i], bitsToEmbed, bitMask);
+            
             Progress?.Update(++currentByte, totalBytes);
         }
 
@@ -59,22 +45,25 @@ public class Lsb(Options options) : StegoMethod<byte[], byte[]>(options)
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        var totalPossibleEmbeddedBits = source.Length * Options.Lsb.Strength;
+        int totalPossibleEmbeddedBits = source.Length * Options.Lsb.Strength;
+        var extractedBitsWorker = new BitWorker(totalPossibleEmbeddedBits);
 
-        if (totalPossibleEmbeddedBits < StegoConstants.HeaderBits)
+        if (extractedBitsWorker.ReadUInt32() <= totalPossibleEmbeddedBits)
         {
             throw new ArgumentException("Insufficient data in the source to read the hidden data header.");
         }
+        
+        byte strength = Options.Lsb.Strength;
+        
+        byte bitMask = CreateBitMask(strength);
+        
+        int totalBytes = source.Length;
+        int currentByte = 0;
 
-        var extractedBitsWorker = new BitWorker(totalPossibleEmbeddedBits);
-        var bitMask = CreateBitMask(Options.Lsb.Strength);
-        var totalBytes = source.Length;
-        var currentByte = 0;
-
-        foreach (var b in source)
+        foreach (byte b in source)
         {
-            var maskedBits = (byte)(b & bitMask);
-            extractedBitsWorker.WriteBitsFromByte(maskedBits, Options.Lsb.Strength);
+            ExtractAndWriteBits(b, bitMask, extractedBitsWorker, strength);
+            
             Progress?.Update(++currentByte, totalBytes);
         }
 
@@ -88,16 +77,16 @@ public class Lsb(Options options) : StegoMethod<byte[], byte[]>(options)
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(payload);
 
-        var requiredBits = payload.Length * 8 + StegoConstants.HeaderBits;
-        var availableBits = GetCapacityBytes(source);
+        int requiredBytes = payload.Length + StegoConstants.HeaderBits / 8;
+        int availableBytes = GetCapacityBytes(source);
 
-        return availableBits >= requiredBits;
+        return availableBytes >= requiredBytes;
     }
 
     public override int GetCapacityBytes(byte[] source)
     {
         ArgumentNullException.ThrowIfNull(source);
-
-        return source.Length * Options.Lsb.Strength;
+        
+        return source.Length * Options.Lsb.Strength / 8;
     }
 }

@@ -1,6 +1,7 @@
+using DeepData.CLI.Commands;
 using DeepData.Settings;
 
-namespace DeepData.CLI.Models;
+namespace DeepData.CLI.Utils;
 
 public class CommandArgs
 {
@@ -66,15 +67,15 @@ public class CommandArgs
     {
         var arg = args[currentArgIndex];
         
-        if (arg.StartsWith("--settings"))
+        if (arg.StartsWith(Constants.SettingsKeyword))
         {
             ParseSettingsOption(arg, args, ref currentArgIndex);
         }
-        else if (arg.StartsWith("--output"))
+        else if (arg.StartsWith(Constants.OutputKeyword))
         {
-            OutputPath = GetOptionValue(arg, args, ref currentArgIndex, "--output");
+            OutputPath = GetOptionValue(arg, args, ref currentArgIndex, Constants.OutputKeyword);
         }
-        else if (arg == "--method")
+        else if (arg == Constants.MethodKeyword)
         {
             ParseMethodOption(args, ref currentArgIndex);
         }
@@ -87,7 +88,7 @@ public class CommandArgs
     
     private void ParseSettingsOption(string arg, string[] args, ref int currentArgIndex)
     {
-        var settingsStr = GetOptionValue(arg, args, ref currentArgIndex, "--settings");
+        var settingsStr = GetOptionValue(arg, args, ref currentArgIndex, Constants.SettingsKeyword);
         ParseSettings(settingsStr);
     }
     
@@ -168,7 +169,8 @@ public class CommandArgs
             throw new ArgumentException("You may want to specify method in order to specify settings.");
         }
         
-        if (LossyFormats.Contains(extension) && Method != Stego.Dct)
+        var method = GetStegoMethod();
+        if (LossyFormats.Contains(extension) && method != Stego.Dct)
         {
             throw new ArgumentException("Only with formats lossy, DCT can work. -- Yoda");
         }
@@ -182,22 +184,33 @@ public class CommandArgs
         
         foreach (var setting in settings)
         {
-            if (string.IsNullOrWhiteSpace(setting)) continue;
+            if (string.IsNullOrWhiteSpace(setting))
+            {
+                continue;
+            }
             
             var parts = setting.Split('=', 2);
+            
             if (parts.Length != 2)
             {
                 throw new ArgumentException($"Wrong settings format: {setting}. 'key=value' expected.");
             }
+            
             Settings[parts[0]] = parts[1];
         }
     }
     
     public Stego GetStegoMethod()
     {
+        var extension = Path.GetExtension(InputImagePath!).ToLowerInvariant();
+
         if (Method.HasValue)
         {
             return Method.Value;
+        }
+        else if (LossyFormats.Contains(extension))
+        {
+            return Stego.Dct;
         }
         else
         {

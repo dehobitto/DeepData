@@ -7,7 +7,7 @@ using SixLabors.ImageSharp.Formats;
 using SixLabors.ImageSharp.Formats.Bmp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Formats.Png;
-using CommandArgs = DeepData.CLI.Models.CommandArgs;
+using CommandArgs = DeepData.CLI.Utils.CommandArgs;
 
 namespace DeepData.CLI.Commands;
 
@@ -77,8 +77,7 @@ public class EmbedCommand(CommandArgs args) : BaseCommand(args)
         }
         catch (Exception ex)
         {
-            Console.WriteLine();
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"\nError: {ex.Message}");
             return 1;
         }
     }

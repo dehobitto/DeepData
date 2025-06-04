@@ -3,6 +3,7 @@ namespace DeepData.Settings;
 [Flags]
 public enum ImageChannels
 {
+    None = 0,
     R = 1 << 0,
     G = 1 << 1,
     B = 1 << 2,

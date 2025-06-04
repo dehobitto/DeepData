@@ -13,8 +13,10 @@ public static class JpegHelper
     public static JpegDecompressResult Decompress(Stream source)
     {
         var decompress = new jpeg_decompress_struct();
+        
         decompress.jpeg_stdio_src(source);
         decompress.jpeg_read_header(true);
+        
         var coefArrays = decompress.jpeg_read_coefficients();
         
         return new JpegDecompressResult(decompress, coefArrays);
@@ -41,6 +43,7 @@ public static class JpegHelper
     {
         var output = new MemoryStream();
         var compress = new jpeg_compress_struct();
+        
         compress.jpeg_stdio_dest(output);
 
         decompressResult.DecompressStruct.jpeg_copy_critical_parameters(compress);
@@ -50,6 +53,7 @@ public static class JpegHelper
         compress.jpeg_finish_compress();
 
         output.Seek(0, SeekOrigin.Begin);
+        
         return output;
     }
 }
@@ -58,13 +62,10 @@ public static class JpegHelper
 ///     Stores the outcome of a JPEG decompression: the core decompression structure
 ///     and all the Discrete Cosine Transform (DCT) coefficient arrays.
 /// </summary>
-/// <param name="decompressStruct">The internal `jpeg_decompress_struct` from LibJpeg.Classic.</param>
+/// <param name="decompressStruct">The internal `jpeg_decompress_struct` from BitMiracle.LibJpeg.Classic.</param>
 /// <param name="coefArrays">The virtual arrays of DCT blocks for each color component.</param>
 public sealed class JpegDecompressResult(jpeg_decompress_struct decompressStruct, jvirt_array<JBLOCK>[] coefArrays)
 {
-    /// <summary>
-    ///     Gets the raw decompression structure.
-    /// </summary>
     public jpeg_decompress_struct DecompressStruct { get; } = decompressStruct;
 
     /// <summary>
@@ -76,12 +77,7 @@ public sealed class JpegDecompressResult(jpeg_decompress_struct decompressStruct
     ///     Gets the number of color components found in the JPEG image.
     /// </summary>
     public int NumComponents => DecompressStruct.Num_components;
-
-    /// <summary>
-    ///     Gets information for a specific JPEG color component by its index.
-    /// </summary>
-    /// <param name="index">The zero-based index of the component (e.g., 0 for Y, 1 for Cb).</param>
-    /// <returns>The 'jpeg_component_info' for the chosen component.</returns>
+    
     public jpeg_component_info GetComponentInfo(int index)
     {
         return DecompressStruct.Comp_info[index];

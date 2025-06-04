@@ -14,6 +14,12 @@ public record JpegOptions
         }
 
         Blocks = blocks;
+
+        if (delta < 1 || delta > 128)
+        {
+            throw new ArgumentOutOfRangeException(nameof(delta), "delta must be between 1 and 128.");
+        }
+        
         Delta = delta;
     }
 

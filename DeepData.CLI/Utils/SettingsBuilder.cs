@@ -1,4 +1,3 @@
-using DeepData.CLI.Models;
 using DeepData.Settings;
 using DeepData.Settings.Records;
 
@@ -78,10 +77,12 @@ public static class SettingsBuilder
                 .Select(c => c.Trim().ToUpper())
                 .ToList();
             
-            imageChannels = channels.Aggregate(
-                ImageChannels.All,
-                (current, channel) => current & ~GetImageChannel(channel)
-            );
+            imageChannels = ImageChannels.None;
+
+            foreach (var channelName in channels)
+            {
+                imageChannels |= GetImageChannel(channelName);
+            }
         }
 
         if (settings.TryGetValue("delta", out var deltaStr) && byte.TryParse(deltaStr, out var deltaValue))

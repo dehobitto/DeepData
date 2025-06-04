@@ -1,5 +1,5 @@
 ﻿using DeepData.CLI.Commands;
-using DeepData.CLI.Models;
+using DeepData.CLI.Utils;
 
 namespace DeepData.CLI;
 
@@ -9,6 +9,11 @@ public static class Program
     {
         try
         {
+            if (args.Length == 0)
+            {
+                Console.WriteLine("deepdata -h for help");
+                return 1;
+            }
             if (args[0] is "-h" or "--help")
             {
                 return new HelpCommand().Execute();
@@ -26,7 +31,7 @@ public static class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"error: {ex.Message}");
             return 1;
         }
     }
@@ -37,8 +42,8 @@ public static class Program
         {
             Command.Embed => new EmbedCommand(args),
             Command.Extract => new ExtractCommand(args),
-            Command.Capacity => new CapacityCommand(args),
-            _ => throw new ArgumentException($"Unknown command: {args.Command}")
+            Command.Commands => new CapacityCommand(args),
+            _ => throw new ArgumentException($"unknown command: {args.Command}")
         };
     }
 }

@@ -1,0 +1,29 @@
+@startuml
+title DCT (Discrete Cosine Transform) Method
+
+participant "JPEG Image" as Image
+participant "Data" as Data
+participant "DCT Method" as DCT
+
+Data -> DCT: Input data bits
+activate DCT
+Image -> DCT: Input JPEG image
+
+DCT -> DCT: Decompress JPEG to DCT coefficients
+DCT -> DCT: Process each 8x8 block
+
+alt Embedding
+    DCT -> DCT: Check capacity
+    DCT -> DCT: Modify DCT coefficients\nusing QIM-like approach
+    DCT -> DCT: Skip zero coefficients
+    DCT -> Image: Compress modified coefficients\nto JPEG
+else Extraction
+    DCT -> DCT: Read header
+    DCT -> DCT: Extract data from\nDCT coefficients
+    DCT -> DCT: Skip zero coefficients
+    DCT -> Data: Save as file
+end
+
+deactivate DCT
+
+@enduml 

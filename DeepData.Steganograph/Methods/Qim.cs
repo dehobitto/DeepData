@@ -18,20 +18,22 @@ public class Qim(Options options) : StegoMethod<Image<Rgba32>, byte[]>(options)
             throw new ArgumentException("The source image does not fit the required data.");
         }
 
-        var bw = BitWorker.CreateWithHeaderFromBytes(data);
+        var bitWorker = BitWorker.CreateWithHeaderFromBytes(data);
 
-        var result = source.Clone();
-        var delta = Options.Qim.Delta;
+        Image<Rgba32> result = source.Clone();
+        
+        byte delta = Options.Qim.Delta;
         var channels = Options.Qim.Channels;
-        var totalPixels = source.Width * source.Height;
-        var currentPixel = 0;
+        
+        int totalPixels = source.Width * source.Height;
+        int currentPixel = 0;
 
-        for (var y = 0; y < result.Height && !bw.IsAtEnd(); y++)
-        for (var x = 0; x < result.Width && !bw.IsAtEnd(); x++)
+        for (var y = 0; y < result.Height && !bitWorker.IsAtEnd(); y++)
+        for (var x = 0; x < result.Width && !bitWorker.IsAtEnd(); x++)
         {
             var px = result[x, y];
 
-            var bit = bw.ReadBit();
+            var bit = bitWorker.ReadBit();
 
             if (channels.HasFlag(ImageChannels.R))
             {
@@ -49,6 +51,7 @@ public class Qim(Options options) : StegoMethod<Image<Rgba32>, byte[]>(options)
             }
 
             result[x, y] = px;
+            
             Progress?.Update(++currentPixel, totalPixels);
         }
 
@@ -112,6 +115,8 @@ public class Qim(Options options) : StegoMethod<Image<Rgba32>, byte[]>(options)
 
     public override int GetCapacityBytes(Image<Rgba32> source)
     {
+        ArgumentNullException.ThrowIfNull(source);
+
         return source.Width * source.Height / 8;
     }
 }

@@ -1,0 +1,39 @@
+@startuml
+title Data Flow
+
+actor User
+participant "CLI" as CLI
+participant "Method" as Method
+
+User -> CLI: Command (embed/extract)
+activate CLI
+
+CLI -> CLI: Parse arguments
+CLI -> CLI: Validate input files
+CLI -> CLI: Read source image
+CLI -> CLI: Determine method
+CLI -> Method: Create method instance
+activate Method
+
+Method -> Method: Check capacity
+Method -> Method: Prepare data
+
+alt Embed
+    Method -> Method: Read data file
+    Method -> Method: Embed data
+    Method -> Method: Generate stego-image
+else Extract
+    Method -> Method: Extract data
+    Method -> Method: Validate extracted data
+    Method -> Method: Generate output
+end
+
+Method --> CLI: Return result
+deactivate Method
+
+CLI -> CLI: Save output file
+CLI -> CLI: Show progress
+CLI --> User: Return success
+deactivate CLI
+
+@enduml 

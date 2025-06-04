@@ -1,0 +1,33 @@
+@startuml
+title Lossless (LSB & QIM)
+
+participant "Image" as Image
+participant "Data" as Data
+participant "Method" as Method
+
+Data -> Method: Input data bits
+Image -> Method: Input image pixels
+
+alt LSB Method
+    Method -> Method: Process each byte
+    Method -> Method: Replace N least significant bits\nwith data bits (N = strength)
+else QIM Method
+    Method -> Method: Process each pixel channel
+    Method -> Method: Quantize value to nearest\nrepresentative value based on bit
+end
+
+Method -> Image: Modified image
+
+Image -> Method: Input stego-image
+
+alt LSB Method
+    Method -> Method: Process each byte
+    Method -> Method: Extract N least significant bits
+else QIM Method
+    Method -> Method: Process each pixel channel
+    Method -> Method: Determine which representative\nvalue is closest
+end
+
+Method -> Data: Reconstructed data bits
+
+@enduml 

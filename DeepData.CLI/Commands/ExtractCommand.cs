@@ -2,8 +2,7 @@ using DeepData.CLI.Utils;
 using DeepData.Extensions;
 using DeepData.Methods;
 using DeepData.Settings;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using CommandArgs = DeepData.CLI.Models.CommandArgs;
+using CommandArgs = DeepData.CLI.Utils.CommandArgs;
 
 namespace DeepData.CLI.Commands;
 

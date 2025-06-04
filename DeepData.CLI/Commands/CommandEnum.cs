@@ -1,8 +1,8 @@
-namespace DeepData.CLI.Models;
+namespace DeepData.CLI.Commands;
 
 public enum Command
 {
     Embed,
     Extract,
-    Capacity
+    Commands
 }

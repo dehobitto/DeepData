@@ -14,4 +14,33 @@ public static class LsbHelper
     {
         return (byte)((1 << bitsPerByte) - 1);
     }
+
+    public static byte ReadBitsForEmbedding(BitWorker dataBitWorker, byte strength)
+    {
+        byte bitsToEmbed = 0;
+        for (byte bitNum = 0; bitNum < strength; bitNum++)
+        {
+            if (dataBitWorker.IsAtEnd())
+            {
+                break;
+            }
+
+            if (dataBitWorker.ReadBit())
+            {
+                bitsToEmbed |= (byte)(1 << (strength - 1 - bitNum));
+            }
+        }
+        return bitsToEmbed;
+    }
+
+    public static byte ApplyBitsToSourceByte(byte sourceByte, byte bitsToEmbed, byte bitMask)
+    {
+        return (byte)((sourceByte & ~bitMask) | (bitsToEmbed & bitMask));
+    }
+
+    public static void ExtractAndWriteBits(byte sourceByte, byte bitMask, BitWorker extractedBitsWorker, byte strength)
+    {
+        byte maskedBits = (byte)(sourceByte & bitMask);
+        extractedBitsWorker.WriteBitsFromByte(maskedBits, strength);
+    }
 }

@@ -7,7 +7,9 @@ public record LsbOptions
     public LsbOptions(byte strength)
     {
         if (strength < 1 || strength > 8)
+        {
             throw new ArgumentOutOfRangeException(nameof(strength), "LSB strength must be between 1 and 8.");
+        }
 
         Strength = strength;
     }

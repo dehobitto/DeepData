@@ -5,7 +5,7 @@ using DeepData.Settings;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.PixelFormats;
-using CommandArgs = DeepData.CLI.Models.CommandArgs;
+using CommandArgs = DeepData.CLI.Utils.CommandArgs;
 
 namespace DeepData.CLI.Commands;
 
@@ -19,7 +19,7 @@ public abstract class BaseCommand(CommandArgs args) : ICommand
 
     protected string FormatSize(int bytes)
     {
-        return $"{bytes / 1024.0 / 1024.0:F2} MB";
+        return $"{(bytes / 1024.0) / 1024.0:F10} MB";
     }
 
     protected int GetCapacity()
