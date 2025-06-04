@@ -9,7 +9,7 @@ public static class Constants
     public static readonly string[] SupportedImageFormats = [".jpg", ".jpeg", ".png", ".bmp" ];
     public static readonly string[] LossyFormats = [ ".jpg", ".jpeg" ];
     
-    public const string Version = "1.1.0";
+    public const string Version = "1.1.2";
     public const string HelpText = """      
                             usage: deepdata [--version | -v] [--help | -h]
                                             <command> [--method <method>] [<args>] [<options>]

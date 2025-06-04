@@ -48,7 +48,7 @@ public class Lsb(Options options) : StegoMethod<byte[], byte[]>(options)
         int totalPossibleEmbeddedBits = source.Length * Options.Lsb.Strength;
         var extractedBitsWorker = new BitWorker(totalPossibleEmbeddedBits);
 
-        if (extractedBitsWorker.ReadUInt32() <= totalPossibleEmbeddedBits)
+        if (extractedBitsWorker.ReadUInt32() >= totalPossibleEmbeddedBits)
         {
             throw new ArgumentException("Insufficient data in the source to read the hidden data header.");
         }
@@ -60,14 +60,19 @@ public class Lsb(Options options) : StegoMethod<byte[], byte[]>(options)
         int totalBytes = source.Length;
         int currentByte = 0;
 
+        extractedBitsWorker.ResetPosition();
+        
         foreach (byte b in source)
         {
+            if (extractedBitsWorker.IsAtEnd())
+            {
+                break;
+            }
+            
             ExtractAndWriteBits(b, bitMask, extractedBitsWorker, strength);
             
             Progress?.Update(++currentByte, totalBytes);
         }
-
-        extractedBitsWorker.ResetPosition();
 
         return extractedBitsWorker.ReadBytesWithHeader();
     }
